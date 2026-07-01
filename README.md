@@ -16,7 +16,9 @@ A hands-on curriculum for learning embedded systems programming with the **Cheap
   - [Lab 2: Hello Screen](#lab-2-hello-screen)
   - [Lab 3: Touch Echo](#lab-3-touch-echo)
   - [Lab 4: Button UI](#lab-4-button-ui)
+  - [Lab 5: Audio Player](#lab-5-audio-player)
 - [Resources](#resources)
+- [Advanced: LVGL MicroPython](#advanced-lvgl-micropython)
 - [Community](#community)
 
 ---
@@ -33,6 +35,7 @@ This curriculum bridges **web development concepts** to **embedded programming**
 | 2 | Hello Screen | SPI displays, drawing primitives |
 | 3 | Touch Echo | Polling loops, coordinate mapping |
 | 4 | Button UI | Hit-testing, state management |
+| 5 | Audio Player | PWM tones, I2S protocol, WAV files |
 
 ---
 
@@ -344,6 +347,74 @@ This is the same math the browser does internally—now you understand it!
 
 ---
 
+### Lab 5: Audio Player
+
+**Goal:** Connect a speaker to the CYD and play sounds—from simple tones to WAV file playback.
+
+<details>
+<summary><strong>What You'll Learn</strong></summary>
+
+- PWM for generating tones (no external hardware needed beyond a buzzer)
+- I2S digital audio protocol
+- WAV file format and binary parsing
+- Connecting external amplifier modules
+
+</details>
+
+<details>
+<summary><strong>Hardware Options</strong></summary>
+
+**Option A: Simple Tones (PWM)**
+| Component | Notes |
+|-----------|-------|
+| Passive buzzer | Must be passive, not active |
+
+**Option B: WAV Playback (I2S)**
+| Component | Notes |
+|-----------|-------|
+| I2S amplifier | MAX98357A recommended |
+| Small speaker | 4Ω or 8Ω, 2-3W |
+
+</details>
+
+<details>
+<summary><strong>Wiring (I2S Amplifier)</strong></summary>
+
+| MAX98357A | CYD GPIO |
+|-----------|:--------:|
+| BCLK | 26 |
+| LRC | 27 |
+| DIN | 22 |
+| VIN | 5V |
+| GND | GND |
+
+</details>
+
+<details>
+<summary><strong>Checkpoints</strong></summary>
+
+- [ ] Passive buzzer plays melody via PWM
+- [ ] I2S amplifier produces sound
+- [ ] WAV file plays with correct pitch and speed
+
+</details>
+
+<details>
+<summary><strong>Common Gotchas</strong></summary>
+
+| Problem | Solution |
+|---------|----------|
+| No sound from buzzer | Ensure it's a **passive** buzzer (active buzzers won't respond to PWM) |
+| No sound from I2S amp | Check BCLK/LRC/DIN wiring; verify 5V power |
+| "Not a valid WAV file" | Re-export as 16-bit PCM WAV (not compressed) |
+| Audio too fast/slow | Sample rate mismatch—check WAV file properties |
+
+</details>
+
+**Code:** [`lab5/lab5_audio_player.py`](lab5/lab5_audio_player.py)
+
+---
+
 ## Resources
 
 ### Official Documentation
@@ -360,6 +431,147 @@ This is the same math the browser does internally—now you understand it!
 
 The complete curriculum with parts lists, checkpoints, and detailed instructions is available in:
 - [`CYD-MicroPython-Beginner-Unit.docx`](CYD-MicroPython-Beginner-Unit.docx)
+
+---
+
+## Advanced: LVGL MicroPython
+
+Once you've completed the basic labs, you may want to explore **LVGL** (Light and Versatile Graphics Library)—a professional-grade UI framework that provides widgets, animations, and touch handling out of the box.
+
+> **Note:** This is an advanced topic. Complete Labs 1-4 first to understand the fundamentals before moving to LVGL.
+
+<details>
+<summary><strong>Why LVGL?</strong></summary>
+
+The basic labs teach you to write your own hit-testing and drawing code. LVGL provides:
+
+- **Pre-built widgets** - Buttons, sliders, charts, keyboards, etc.
+- **Automatic touch handling** - No manual hit-testing required
+- **Animations and themes** - Professional-looking UIs
+- **Better performance** - Optimized rendering with partial screen updates
+
+The tradeoff: LVGL requires custom firmware (larger binary) and has a steeper learning curve.
+
+</details>
+
+<details>
+<summary><strong>Step 1: Identify Your Exact Board Variant</strong></summary>
+
+**Critical first step.** CYD boards vary significantly:
+
+| Variant | Processor | Display | Touch |
+|---------|-----------|---------|-------|
+| ESP32-2432S028R | ESP32-D0WD | ILI9341 | XPT2046 (resistive) |
+| ESP32-2432S028C | ESP32-D0WD | ILI9341 | Capacitive |
+| ESP32-S3 variants | ESP32-S3 | ST7789 or ILI9341 | Various |
+
+Check the chip markings on the back of your board. There are at least 3-4 "CYD" sub-variants with different pin mappings.
+
+**Pin reference for confirmation:** [rzeldent/esp32-smartdisplay](https://github.com/rzeldent/esp32-smartdisplay) — even though it targets a different framework, the pin definitions are reliable for cross-referencing.
+
+</details>
+
+<details>
+<summary><strong>Step 2: Check for Prebuilt Firmware (Recommended)</strong></summary>
+
+Before building from source, search for **prebuilt lv_micropython `.bin` files for CYD**. Community members have already built firmware for common CYD variants.
+
+Search terms:
+- `lv_micropython CYD bin`
+- `lv_micropython ESP32-2432S028 firmware`
+- `LVGL MicroPython CYD prebuilt`
+
+This can save significant toolchain setup time, especially if you're working with multiple board variants.
+
+</details>
+
+<details>
+<summary><strong>Step 3: Build Environment Setup (If Building from Source)</strong></summary>
+
+```bash
+# Clone lv_micropython
+git clone https://github.com/lvgl/lv_micropython.git
+cd lv_micropython
+git submodule update --init --recursive lib/lv_bindings
+```
+
+You'll need the ESP-IDF toolchain:
+1. Install [ESP-IDF](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/) (check lv_micropython README for supported version—v4.x or v5.x)
+2. Source the export script: `source $IDF_PATH/export.sh`
+
+</details>
+
+<details>
+<summary><strong>Step 4: Board Configuration</strong></summary>
+
+lv_micropython needs a board manifest that configures:
+- SPI pins for the ILI9341 display
+- SPI pins for the XPT2046 touch (often a separate bus)
+- Backlight pin
+- Display rotation/mirroring settings
+
+**Finding a config:**
+- Search GitHub for `lv_micropython CYD` or `lv_micropython ESP32-2432S028`
+- Check [lvgl/lv_micropython](https://github.com/lvgl/lv_micropython) issues and discussions
+- Use the [CYD Board Pinout Reference](#cyd-board-pinout-reference) above to verify pin assignments
+
+Place your board manifest in `boards/` in your lv_micropython clone.
+
+</details>
+
+<details>
+<summary><strong>Step 5: Build and Flash</strong></summary>
+
+**Build:**
+```bash
+make -C ports/esp32 BOARD=YOUR_CYD_BOARD submodules
+make -C ports/esp32 BOARD=YOUR_CYD_BOARD
+```
+
+**Flash (erase first—CYDs often have factory demo firmware that can cause issues):**
+```bash
+esptool.py --chip esp32 --port /dev/ttyUSB0 erase_flash
+esptool.py --chip esp32 --port /dev/ttyUSB0 write_flash -z 0x1000 build-YOUR_CYD_BOARD/firmware.bin
+```
+
+On macOS, the port is typically `/dev/cu.usbserial-*` or `/dev/cu.SLAB_USBtoUART`.
+
+</details>
+
+<details>
+<summary><strong>Step 6: Verify LVGL from REPL</strong></summary>
+
+```python
+import lvgl as lv
+import ili9XXX  # or whatever display driver your board config provides
+import xpt2046
+
+lv.init()
+
+# Initialize display driver (per your board config's example)
+# Initialize touch driver
+
+# Create a simple button to test
+scr = lv.scr_act()
+btn = lv.btn(scr)
+btn.center()
+label = lv.label(btn)
+label.set_text("Hello CYD")
+```
+
+If the button renders and touch registers, you're ready to build real LVGL applications.
+
+</details>
+
+<details>
+<summary><strong>LVGL Resources</strong></summary>
+
+- [LVGL Documentation](https://docs.lvgl.io/)
+- [lv_micropython Repository](https://github.com/lvgl/lv_micropython)
+- [LVGL MicroPython Examples](https://github.com/lvgl/lv_micropython/tree/master/examples)
+- [rzeldent/esp32-smartdisplay](https://github.com/rzeldent/esp32-smartdisplay) — Pin reference for CYD variants
+
+</details>
 
 ---
 
