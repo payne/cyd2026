@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+._*
+
+# Thonny
+.thonny/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+~$*
+
+# Interactions log (session-specific)
+interactions.md
